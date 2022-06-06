@@ -144,6 +144,34 @@ namespace InputComponent {
 				refreshPolledStates(ActiveGamepad as GamepadType);
 			}
 		}
+		if (UIS.TouchEnabled) {
+			CurrentPlatform = "Touch";
+		}
+	}
+	export function RecalibratePlaform() {
+		const lastType = UIS.GetLastInputType();
+		if (lastType === Enum.UserInputType.Keyboard || lastType.Name.find("Mouse")[0] !== undefined) {
+			CurrentPlatform = "Keyboard";
+		} else if (lastType === Enum.UserInputType.Touch) {
+			CurrentPlatform = "Touch";
+		} else if (lastType.Name.find("Gamepad")[0] !== undefined) {
+			CurrentPlatform = "Gamepad";
+		} else if (UIS.VREnabled) {
+			CurrentPlatform = "VR";
+		}
+	}
+
+	export function GetPlatform(): Platform {
+		const lastType = UIS.GetLastInputType();
+		if (lastType === Enum.UserInputType.Keyboard || lastType.Name.find("Mouse")[0] !== undefined) {
+			return "Keyboard";
+		} else if (lastType === Enum.UserInputType.Touch) {
+			return "Touch";
+		} else if (lastType.Name.find("Gamepad")[0] !== undefined) {
+			return "Gamepad";
+		} else {
+			return "VR";
+		}
 	}
 }
 
