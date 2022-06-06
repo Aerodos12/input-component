@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "Aerodos12",
-  "license": "ISC",
+  "license": "MIT",
   "types": "out/index.d.ts",
   "files": [
     "out",
