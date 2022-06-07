@@ -4,42 +4,45 @@
  * @package
  */
 import Signal from "@rbxts/signal";
+import {
+	GamepadButtonCode,
+	MouseType,
+	Platform,
+	DeviceSelector,
+	DeviceSelectorMap,
+	InputKind,
+	GamepadDownSignal,
+	KeyDownSignal,
+	MouseDownSignal,
+	GamepadType,
+	SensitivityOptions,
+	PolledGamepadMap,
+} from "./inputTypes";
+import PressedHandler from "./pressedState";
 
 const UIS: UserInputService = game.GetService("UserInputService");
 
 namespace InputComponent {
-	export type MouseType =
-		| Enum.UserInputType.MouseButton1
-		| Enum.UserInputType.MouseButton2
-		| Enum.UserInputType.MouseButton3;
 	/**
 	 * Event that fires when a gamepad button is pressed or released.
 	 * @public
 	 */
-	export const GamepadButtonChanged: Signal<(button: Enum.KeyCode, isDown: boolean) => void> = new Signal<
+	export const GamepadButtonChanged: GamepadDownSignal = new Signal<
 		(button: Enum.KeyCode, isDown: boolean) => void
 	>();
 	/**
 	 * Event that fires when a key is pressed or released.
 	 * @public
 	 */
-	export const KeyChanged: Signal<(key: Enum.KeyCode, isDown: boolean) => void> = new Signal<
-		(key: Enum.KeyCode, isDown: boolean) => void
-	>();
+	export const KeyChanged: KeyDownSignal = new Signal<(key: Enum.KeyCode, isDown: boolean) => void>();
 	/**
 	 * Event that fires when a mouse button is pressed or released.
 	 * @public
 	 */
-	export const MouseButtonChanged: Signal<(key: MouseType, isDown: boolean) => void> = new Signal<
-		(key: MouseType, isDown: Boolean) => void
-	>();
-
-	export type Platform = "Gamepad" | "Keyboard" | "Touch" | "VR";
+	export const MouseButtonChanged: MouseDownSignal = new Signal<(key: MouseType, isDown: boolean) => void>();
 	export let CurrentPlatform: Platform = "Keyboard";
 	export const PlatformChanged: Signal = new Signal<(platform: Platform) => void>();
 	export let DeviceCount = 0;
-	export type DeviceSelector = () => boolean;
-	export type DeviceSelectorMap = Map<Platform, DeviceSelector>;
 	export const DeviceSelectors: DeviceSelectorMap = new Map<Platform, DeviceSelector>();
 	/**
 	 * Adds a function to a map of them that determines the value of {@link CurrentPlatform}.
@@ -50,28 +53,10 @@ namespace InputComponent {
 	export function AddDeviceSelector(platform: Platform, selector: DeviceSelector) {
 		DeviceSelectors.set(platform, selector);
 	}
-	export type InputKind = Enum.KeyCode | MouseType;
-	type PressedState = Map<InputKind, boolean>;
-	class PressedHandler {
-		private state: PressedState = new Map<InputKind, boolean>();
-		public setPressed(key: InputKind, isPressed: boolean) {
-			if (key.EnumType === Enum.UserInputType) {
-				this.state.set(key, isPressed);
-				MouseButtonChanged.Fire(key as MouseType, isPressed);
-				return;
-			}
-			if (UIS.GamepadSupports(Enum.UserInputType.Gamepad1, key as Enum.KeyCode)) {
-				GamepadButtonChanged.Fire(key as Enum.KeyCode, isPressed);
-			} else {
-				KeyChanged.Fire(key as Enum.KeyCode, isPressed);
-			}
-			this.state.set(key, isPressed);
-		}
-		public getPressed(key: Enum.KeyCode): boolean {
-			return this.state.get(key) as boolean;
-		}
-	}
-	export const Pressed: PressedHandler = new PressedHandler();
+	/**
+	 * The state of every registered mouse button, key and/or gamepad button.
+	 */
+	export const Pressed: PressedHandler = new PressedHandler(GamepadButtonChanged, MouseButtonChanged, KeyChanged);
 	{
 		Enum.KeyCode.GetEnumItems().forEach(function (keyCode: Enum.KeyCode) {
 			Pressed.setPressed(keyCode as InputKind, false);
@@ -89,35 +74,12 @@ namespace InputComponent {
 			Pressed.setPressed(mouseType as InputKind, false);
 		});
 	}
-	/**
-	 * Denotes one of the 8 Gamepads that can be connected at once to Roblox.
-	 */
-	export type GamepadType =
-		| Enum.UserInputType.Gamepad1
-		| Enum.UserInputType.Gamepad2
-		| Enum.UserInputType.Gamepad3
-		| Enum.UserInputType.Gamepad4
-		| Enum.UserInputType.Gamepad5
-		| Enum.UserInputType.Gamepad6
-		| Enum.UserInputType.Gamepad7
-		| Enum.UserInputType.Gamepad8
-		| Enum.UserInputType.None;
 	let ActiveGamepad: GamepadType | undefined = undefined;
 	/**
 	 * Determines the current scope of input (how inputs are handled within this library).
 	 * @public
 	 */
 	export const CurrentIScheme = "General";
-	/**
-	 * An interface used for configuring mouse sensitivity globally in Rodblogan Warfare.
-	 * @interface
-	 * @public
-	 */
-	export interface SensitivityOptions {
-		mouse: number;
-		aim: number;
-		touch: Vector2;
-	}
 	export const Sensitivity: SensitivityOptions = {
 		mouse: 0.3,
 		aim: 0.2,
@@ -155,10 +117,6 @@ namespace InputComponent {
 		}
 		return ActiveGamepad !== Enum.UserInputType.None ? ActiveGamepad : undefined;
 	}
-	/**
-	 * Map used for polled inputs on console.
-	 */
-	export type PolledGamepadMap = Map<InputKind, InputObject>;
 	const gamepadPollMap: PolledGamepadMap = new Map<InputKind, InputObject>();
 	let regularKey: InputKind = UIS.GetConnectedGamepads().size() > 0 ? Enum.KeyCode.ButtonR1 : Enum.KeyCode.I;
 	/**
@@ -262,28 +220,6 @@ namespace InputComponent {
 			? (ActiveGamepad as Enum.UserInputType)
 			: Enum.UserInputType.Keyboard;
 	}
-
-	/**
-	 * Used for console {@link InputKind inputs} only.
-	 */
-	export type GamepadButtonCode =
-		| Enum.KeyCode.ButtonA
-		| Enum.KeyCode.ButtonB
-		| Enum.KeyCode.ButtonX
-		| Enum.KeyCode.ButtonY
-		| Enum.KeyCode.ButtonL1
-		| Enum.KeyCode.ButtonL2
-		| Enum.KeyCode.ButtonL3
-		| Enum.KeyCode.ButtonR1
-		| Enum.KeyCode.ButtonR2
-		| Enum.KeyCode.ButtonR3
-		| Enum.KeyCode.ButtonSelect
-		| Enum.KeyCode.ButtonStart
-		| Enum.KeyCode.DPadDown
-		| Enum.KeyCode.DPadLeft
-		| Enum.KeyCode.DPadRight
-		| Enum.KeyCode.DPadUp
-		| Enum.KeyCode.DPadDown;
 
 	/**
 	 * Determines if the current {@link ActiveGamepad controller} supports the given {@link GamepadButtonCode button}.
