@@ -21,3 +21,7 @@ InputComponent featured the following:
 - Input axes (both polled and non-polled).
 - A Character controller (based on the one from the player module, but more versatile)
 - Platform adaptability (used for platform-agnostic code).
+- Grid-based placement
+- Haptic feedback
+- Inventory input support (for equpping things with the number keys)
+- Input icons (via spritesheets)
