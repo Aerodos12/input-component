@@ -37,12 +37,19 @@ There are many ways to contribute. Here they are, organized:
     - Refactoring
     - Typescript Insights (if you have any)
     - Bugfixes (when needed)
+
+
 2. Equipment/Resources
+
+
     In order for some platforms to fully appear (such as the VR and - to an extent - the Mobile platforms) in the module,
     either equipment or money (for equipment) is going to be needed. The reason why VR is not achievable with this module is due 
     the fact that I (the creator of this module) do not have the require graphics card for this to appear properly. VR **DOES** require 
     a working discrete GPU for development on PC. However, you don't have to do this automatically. Also, tablet devices have bigger screens, so input
     will be harder without the right touch controls inplemented. Like I said, you don't have to contribute in this department if you don't want to.
+    
+    
+    
 3. Hosting
     For the module to have proper documentation, some knowledge of what is used for Roblox documenatation is required.
     However, I cannot find that particular solution. If anyone has the info needed to make this a reality, that would be appreciated.
