@@ -17,11 +17,20 @@ import {
 	GamepadType,
 	SensitivityOptions,
 	PolledGamepadMap,
+	BindMap,
+	BindDatum,
+	InputBeganPlugin,
+	InputChangedPlugin,
+	InputReleasedPlugin,
+	WindowFocusedPlugin,
+	RenderSteppedInputPlugin,
+	InputPlugin,
+	InputPluginType,
 } from "./inputTypes";
 import PressedHandler from "./pressedState";
 
 const UIS: UserInputService = game.GetService("UserInputService");
-
+const RunService: RunService = game.GetService("RunService");
 namespace InputComponent {
 	/**
 	 * Event that fires when a gamepad button is pressed or released.
@@ -255,6 +264,148 @@ namespace InputComponent {
 			bestGamepad = connectedGamepads[0] as GamepadType;
 		}
 		return bestGamepad;
+	}
+	/**
+	 * Retrieves the built-in gamepad sensitivity (Roblox).
+	 * @returns The sensitivity (in the Roblox settings) of every gamepad.
+	 */
+	export function GetGamepadSensitivity(): number {
+		try {
+			return UserSettings().GetService("UserGameSettings").GamepadCameraSensitivity;
+		} catch (e) {
+			return 0.09;
+		}
+	}
+
+	let binds: BindDatum = new Map<String, BindMap>();
+
+	/**
+	 * Retrieves the player's custom inputs from a cached source.
+	 * @returns The player's custom input binds.
+	 */
+	export function GetBinds(): BindDatum {
+		return binds;
+	}
+
+	/**
+	 * Updates the cached inputs to a newer version.
+	 * @param newBinds The updated version of the current input binds.
+	 */
+	export function SetBinds(newBinds: BindDatum): void {
+		binds = newBinds;
+	}
+	/**
+	 * Queries the {@link PressedState pressed state} for whether or not the input is pressed.
+	 * @param inputEnum the input to check
+	 * @returns Whether or not the input is being held down.
+	 */
+	export function IsInputDown(inputEnum: InputKind): boolean {
+		return Pressed.getPressed(inputEnum);
+	}
+
+	/**
+	 * Checks whether or not the input bind given is held.
+	 * @param category The scheme (or category) of inputs to be queried
+	 * @param key The name of the specific input to be checked
+	 * @returns Whether or not the input is down.
+	 */
+	export function IsBindDown(category: String, key: String): boolean {
+		const bindList = binds.get(category);
+		if (bindList === undefined) {
+			return false;
+		}
+		const bindMap = bindList[CurrentPlatform];
+		if (bindMap === undefined) {
+			return false;
+		}
+		const bindKey = bindMap.get(key);
+		return Pressed.getPressed(bindKey as InputKind);
+	}
+
+	/**
+	 * Retrieves the actual input code for the given keybind.
+	 * @param category The scheme (or category) of inputs to be queried
+	 * @param key The name of the specific input to be checked
+	 * @param platform The name of the platform to query for.
+	 * @remarks Only Keyboard and Gamepad platforms currently use this data type.
+	 * @returns The actual {@link InputKind keycode (or input type)} of the input bind queried (or nothing at all if not found).
+	 */
+	export function GetBindCode(
+		category: String,
+		key: String,
+		platform: Platform = CurrentPlatform,
+	): InputKind | undefined {
+		const bindList = binds.get(category);
+		if (bindList === undefined) {
+			return undefined;
+		}
+		const bindMap = bindList[platform];
+		if (bindMap === undefined) {
+			return undefined;
+		}
+		const bindKey = bindMap.get(key);
+		return bindKey;
+	}
+	const BeganPlugins: Array<InputBeganPlugin> = new Array<InputBeganPlugin>();
+	const ChangedPlugins: Array<InputChangedPlugin> = new Array<InputChangedPlugin>();
+	const ReleasedPlugins: Array<InputReleasedPlugin> = new Array<InputReleasedPlugin>();
+	const WindowFocusedPlugins: Array<WindowFocusedPlugin> = new Array<WindowFocusedPlugin>();
+	const RenderedPlugins: Array<RenderSteppedInputPlugin> = new Array<RenderSteppedInputPlugin>();
+	{
+		UIS.InputBegan.Connect((input, g) => {
+			for (const iterator of BeganPlugins) {
+				const result = iterator(input, g);
+				if (result) {
+					break;
+				}
+			}
+		});
+		UIS.InputChanged.Connect((input, g) => {
+			for (const iterator of ChangedPlugins) {
+				const result = iterator(input, g);
+				if (result) {
+					break;
+				}
+			}
+		});
+		UIS.InputEnded.Connect((input, g) => {
+			for (const iterator of ReleasedPlugins) {
+				const result = iterator(input, g);
+				if (result) {
+					break;
+				}
+			}
+		});
+		RunService.BindToRenderStep("RenderInput", Enum.RenderPriority.Input.Value + 1, (dt: number) => {
+			for (const iterator of RenderedPlugins) {
+				iterator(dt);
+			}
+		});
+		UIS.WindowFocused.Connect(() => {
+			for (const iterator of WindowFocusedPlugins) {
+				iterator();
+			}
+		});
+	}
+
+	export function AddInputPlugin(pluginType: InputPluginType, plugin: InputPlugin) {
+		switch (pluginType) {
+			case InputPluginType.InputBegan:
+				BeganPlugins.push(plugin as InputBeganPlugin);
+				break;
+			case InputPluginType.InputChanged:
+				ChangedPlugins.push(plugin as InputChangedPlugin);
+				break;
+			case InputPluginType.InputReleased:
+				ReleasedPlugins.push(plugin as InputReleasedPlugin);
+				break;
+			case InputPluginType.RenderStepped:
+				RenderedPlugins.push(plugin as RenderSteppedInputPlugin);
+				break;
+			case InputPluginType.WindowFocused:
+				WindowFocusedPlugins.push(plugin as WindowFocusedPlugin);
+				break;
+		}
 	}
 }
 

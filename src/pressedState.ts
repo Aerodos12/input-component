@@ -30,7 +30,7 @@ export default class PressedHandler {
 	 * @param key the given {@link Enum.KeyCode keycode} to check for a press with.
 	 * @returns Whether or not the given input was pressed.
 	 */
-	public getPressed(key: Enum.KeyCode): boolean {
+	public getPressed(key: InputKind): boolean {
 		return this.state.get(key) as boolean;
 	}
 	/**

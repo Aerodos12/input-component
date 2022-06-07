@@ -25,3 +25,4 @@ InputComponent featured the following:
 - Haptic feedback
 - Inventory input support (for equpping things with the number keys)
 - Input icons (via spritesheets)
+- Modular ways of processing all of the above.

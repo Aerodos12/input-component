@@ -91,3 +91,62 @@ export interface SensitivityOptions {
  * Map used for polled inputs on console.
  */
 export type PolledGamepadMap = Map<InputKind, InputObject>;
+
+/**
+ * Corresponds to the gamepad section of the player's custom inputs.
+ */
+export type GamepadBindDefinition = Map<String, InputKind | undefined>;
+/**
+ * Corresponds to the keyboard section of the player's custom inputs.
+ */
+export type KeyboardBindDefinition = Map<String, InputKind | undefined>;
+/**
+ * Represents a part of the player's custom inputs.
+ */
+/**
+ *  Represents a part of the player's custom inputs.
+ */
+export type BindMap = {
+	[key in Platform]: GamepadBindDefinition | KeyboardBindDefinition;
+};
+/**
+ * Represents ALL of the player's custom inputs.
+ */
+export type BindDatum = Map<String, BindMap>;
+/**
+ * Input plugin function used for polled inputs.
+ */
+export type RenderSteppedInputPlugin = (dt: number) => boolean;
+/**
+ * Input plugin function used when an input is pressed.
+ */
+export type InputBeganPlugin = (input: InputObject, g: boolean) => boolean;
+/**
+ * Input plugin function used when an input is released.
+ */
+export type InputReleasedPlugin = (input: InputObject, g: boolean) => boolean;
+/**
+ * Input plugin function used when an input has changed.
+ */
+export type InputChangedPlugin = (input: InputObject, g: boolean) => boolean;
+/**
+ * Input plugin function used when the game window has regained its focus.
+ */
+export type WindowFocusedPlugin = () => boolean;
+/**
+ * Represents all Input Plugin types.
+ */
+export type InputPlugin =
+	| RenderSteppedInputPlugin
+	| InputBeganPlugin
+	| InputChangedPlugin
+	| InputReleasedPlugin
+	| WindowFocusedPlugin;
+
+export enum InputPluginType {
+	RenderStepped,
+	InputBegan,
+	InputChanged,
+	InputReleased,
+	WindowFocused,
+}
