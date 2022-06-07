@@ -243,6 +243,83 @@ namespace InputComponent {
 			}
 		});
 	}
+
+	/**
+	 * Retrieves the value of {@link ActiveGamepad}
+	 * @returns The {@link GamepadType} currently in use.
+	 */
+	export function GetCurrentGamepad(): GamepadType | undefined {
+		return ActiveGamepad;
+	}
+
+	/**
+	 * Retrieves the appropriate input based on a given {@link InputKind input}.
+	 * @param keyCode The input to be checked.
+	 * @returns The corresponding input type for the given input
+	 */
+	export function GetUserInputTypeForKeyCode(keyCode: InputKind): Enum.UserInputType {
+		return UIS.GamepadSupports(ActiveGamepad as Enum.UserInputType, keyCode as Enum.KeyCode)
+			? (ActiveGamepad as Enum.UserInputType)
+			: Enum.UserInputType.Keyboard;
+	}
+
+	/**
+	 * Used for console {@link InputKind inputs} only.
+	 */
+	export type GamepadButtonCode =
+		| Enum.KeyCode.ButtonA
+		| Enum.KeyCode.ButtonB
+		| Enum.KeyCode.ButtonX
+		| Enum.KeyCode.ButtonY
+		| Enum.KeyCode.ButtonL1
+		| Enum.KeyCode.ButtonL2
+		| Enum.KeyCode.ButtonL3
+		| Enum.KeyCode.ButtonR1
+		| Enum.KeyCode.ButtonR2
+		| Enum.KeyCode.ButtonR3
+		| Enum.KeyCode.ButtonSelect
+		| Enum.KeyCode.ButtonStart
+		| Enum.KeyCode.DPadDown
+		| Enum.KeyCode.DPadLeft
+		| Enum.KeyCode.DPadRight
+		| Enum.KeyCode.DPadUp
+		| Enum.KeyCode.DPadDown;
+
+	/**
+	 * Determines if the current {@link ActiveGamepad controller} supports the given {@link GamepadButtonCode button}.
+	 * @param button The {@link GamepadButtonCode controller button} to check for support with.
+	 * @returns Whether or not the given {@link GamepadButtonCode button} is supported.
+	 */
+	export function ControllerSupports(button: GamepadButtonCode): boolean {
+		return UIS.GamepadSupports(ActiveGamepad as Enum.UserInputType, button);
+	}
+
+	/**
+	 * Retrieves the current state of the given {@link GamepadButtonCode controller input} in realtime (polled).
+	 * @param button the {@link GamepadButtonCode button} to query the polled inputs for.
+	 * @returns An {@link InputObject} representing the state of the given button.
+	 */
+	export function GetGamepadState(button: GamepadButtonCode): InputObject | undefined {
+		return gamepadPollMap.get(button as InputKind);
+	}
+
+	/**
+	 * Represents no gamepads (or any other inputs) being present at the moment.
+	 */
+	export const NONE_INPUT = Enum.UserInputType.None;
+	/**
+	 * Retrieves the first connected controlled.
+	 * @returns The first available {@link GamepadType gamepad} that is connected.
+	 */
+	export function GetHighestPriorityGamepad(): GamepadType {
+		const connectedGamepads = UIS.GetConnectedGamepads();
+		let bestGamepad: GamepadType = NONE_INPUT;
+		connectedGamepads.sort((a, b) => a.Value < b.Value);
+		if (connectedGamepads.size() > 0) {
+			bestGamepad = connectedGamepads[0] as GamepadType;
+		}
+		return bestGamepad;
+	}
 }
 
 export = InputComponent;
