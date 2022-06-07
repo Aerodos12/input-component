@@ -388,6 +388,11 @@ namespace InputComponent {
 		});
 	}
 
+	/**
+	 * Adds a function (as a plugin) to the component, allowing newer ways of input to be processed.
+	 * @param pluginType The type of {@link InputPluginType plugin} to be added.
+	 * @param plugin The {@link InputPlugin plugin} itself.
+	 */
 	export function AddInputPlugin(pluginType: InputPluginType, plugin: InputPlugin) {
 		switch (pluginType) {
 			case InputPluginType.InputBegan:
