@@ -26,3 +26,8 @@ InputComponent featured the following:
 - Inventory input support (for equpping things with the number keys)
 - Input icons (via spritesheets)
 - Modular ways of processing all of the above.
+
+
+## Contributing 
+
+For Contribution Guidelines, see [CONTRIBUTING.md]() for details.
