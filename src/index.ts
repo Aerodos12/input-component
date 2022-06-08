@@ -28,28 +28,12 @@ import {
 	InputPluginType,
 } from "./inputTypes";
 import PressedHandler from "./pressedState";
+import InputComponentUtils, { GamepadButtonChanged, KeyChanged, MouseButtonChanged } from "./util";
 
 const UIS: UserInputService = game.GetService("UserInputService");
 const RunService: RunService = game.GetService("RunService");
 const workspace: Workspace = game.GetService("Workspace");
 namespace InputComponent {
-	/**
-	 * Event that fires when a gamepad button is pressed or released.
-	 * @public
-	 */
-	export const GamepadButtonChanged: GamepadDownSignal = new Signal<
-		(button: Enum.KeyCode, isDown: boolean) => void
-	>();
-	/**
-	 * Event that fires when a key is pressed or released.
-	 * @public
-	 */
-	export const KeyChanged: KeyDownSignal = new Signal<(key: Enum.KeyCode, isDown: boolean) => void>();
-	/**
-	 * Event that fires when a mouse button is pressed or released.
-	 * @public
-	 */
-	export const MouseButtonChanged: MouseDownSignal = new Signal<(key: MouseType, isDown: boolean) => void>();
 	export let CurrentPlatform: Platform = "Keyboard";
 	export const PlatformChanged: Signal = new Signal<(platform: Platform) => void>();
 	export let DeviceCount = 0;
@@ -64,26 +48,32 @@ namespace InputComponent {
 		DeviceSelectors.set(platform, selector);
 	}
 	/**
-	 * The state of every registered mouse button, key and/or gamepad button.
+	 * Sets up and returns an {@link RBXScriptConnection} to {@link InputComponentUtils.GamepadButtonChanged GamepadButtonChanged}.
+	 * @param f the listener to register
+	 * @returns a connection from the given listener to the {@link InputComponentUtils.GamepadButtonChanged GamepadButtonChanged} event.
 	 */
-	export const Pressed: PressedHandler = new PressedHandler(GamepadButtonChanged, MouseButtonChanged, KeyChanged);
-	{
-		Enum.KeyCode.GetEnumItems().forEach(function (keyCode: Enum.KeyCode) {
-			Pressed.setPressed(keyCode as InputKind, false);
-		});
+	export function ListenToGamepadButtonChanged(
+		f: (input: Enum.KeyCode, isPressed: boolean) => void,
+	): RBXScriptConnection {
+		return InputComponentUtils.GamepadButtonChanged.Connect(f);
 	}
-	{
-		Enum.UserInputType.GetEnumItems().forEach(function (mouseButton: Enum.UserInputType) {
-			const mouseType = mouseButton as MouseType;
-			if (mouseType === undefined) {
-				return;
-			}
-			if (mouseType.Name.find("MouseButton")[0] === undefined) {
-				return;
-			}
-			Pressed.setPressed(mouseType as InputKind, false);
-		});
+	/**
+	 * Sets up and returns an {@link RBXScriptConnection} to {@link InputComponentUtils.KeyChanged KeyChanged}.
+	 * @param f the listener to register
+	 * @returns a connection from the given listener to the {@link InputComponentUtils.KeyChanged KeyChanged} event.
+	 */
+	export function ListenToKeyChanged(f: (input: Enum.KeyCode, isPressed: boolean) => void): RBXScriptConnection {
+		return InputComponentUtils.KeyChanged.Connect(f);
 	}
+	/**
+	 * Sets up and returns an {@link RBXScriptConnection} to {@link InputComponentUtils.MouseButtonChanged MouseButtonChanged}.
+	 * @param f the listener to register
+	 * @returns a connection from the given listener to the {@link InputComponentUtils.MouseButtonChanged MouseButtonChanged} event.
+	 */
+	export function ListenToMouseButtonChanged(f: (input: MouseType, isPressed: boolean) => void): RBXScriptConnection {
+		return InputComponentUtils.MouseButtonChanged.Connect(f);
+	}
+
 	let ActiveGamepad: GamepadType | undefined = undefined;
 	/**
 	 * Determines the current scope of input (how inputs are handled within this library).
@@ -301,7 +291,7 @@ namespace InputComponent {
 	 * @returns Whether or not the input is being held down.
 	 */
 	export function IsInputDown(inputEnum: InputKind): boolean {
-		return Pressed.getPressed(inputEnum);
+		return InputComponentUtils.Pressed.getPressed(inputEnum);
 	}
 
 	/**
@@ -320,7 +310,7 @@ namespace InputComponent {
 			return false;
 		}
 		const bindKey = bindMap.get(key);
-		return Pressed.getPressed(bindKey as InputKind);
+		return InputComponentUtils.Pressed.getPressed(bindKey as InputKind);
 	}
 
 	/**

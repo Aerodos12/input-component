@@ -1,5 +1,4 @@
 import Signal from "@rbxts/signal";
-import { GamepadButtonChanged, KeyChanged, MouseButtonChanged } from ".";
 /**
  * Used for console {@link InputKind inputs} only.
  */
