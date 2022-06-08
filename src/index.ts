@@ -31,6 +31,7 @@ import PressedHandler from "./pressedState";
 
 const UIS: UserInputService = game.GetService("UserInputService");
 const RunService: RunService = game.GetService("RunService");
+const workspace: Workspace = game.GetService("Workspace");
 namespace InputComponent {
 	/**
 	 * Event that fires when a gamepad button is pressed or released.
@@ -411,6 +412,85 @@ namespace InputComponent {
 				WindowFocusedPlugins.push(plugin as WindowFocusedPlugin);
 				break;
 		}
+	}
+
+	/**
+	 * Works the same way as {@link PlayerMouse.Hit}, but with more features.
+	 * @param filter A list of instances to ignore when processing input.
+	 * @returns The same result as {@link PlayerMouse.Hit}, but with the {@link filter} appled.
+	 */
+	export function GetPositionCFrame(filter: Array<Instance> = new Array<Instance>()): CFrame {
+		let position;
+		if (UIS.MouseEnabled) {
+			position = UIS.GetMouseLocation();
+		}
+		let r: Ray | undefined;
+		if (position !== undefined) {
+			r = workspace.CurrentCamera?.ViewportPointToRay(position.X, position.Y, 10);
+			if (r !== undefined) {
+				r = new Ray(r.Origin, r.Direction.mul(1000));
+			}
+		}
+		if (r !== undefined) {
+			const rp: RaycastParams = new RaycastParams();
+			rp.FilterDescendantsInstances = filter;
+			rp.FilterType = Enum.RaycastFilterType.Blacklist;
+			rp.IgnoreWater = true;
+			const rayCastRes: RaycastResult | undefined = workspace.Raycast(r.Origin, r.Direction, rp);
+			if (rayCastRes !== undefined) {
+				return new CFrame(rayCastRes.Position, rayCastRes.Position.add(r.Unit.Direction));
+			}
+		}
+		return new CFrame();
+	}
+
+	/**
+	 * Works the same as {@link PlayerMouse.UnitRay}.
+	 * @returns the same value as {@link PlayerMouse.UnitRay}.
+	 */
+	export function GetPositionRay(): Ray | undefined {
+		let position;
+		if (UIS.MouseEnabled) {
+			position = UIS.GetMouseLocation();
+		}
+		let r: Ray | undefined;
+		if (position !== undefined) {
+			r = workspace.CurrentCamera?.ViewportPointToRay(position.X, position.Y, 10);
+			if (r !== undefined) {
+				r = new Ray(r.Origin, r.Direction.mul(1000));
+			}
+		}
+		return r;
+	}
+
+	/**
+	 * Works the same way as {@link PlayerMouse.Target}, but with more features.
+	 * @param filter A list of instances to ignore when processing input.
+	 * @returns The same result as {@link PlayerMouse.Target}, but with the {@link filter} appled.
+	 */
+	export function GetPositionHit(filter: Array<Instance> = new Array<Instance>()): Instance | undefined {
+		let position;
+		if (UIS.MouseEnabled) {
+			position = UIS.GetMouseLocation();
+		}
+		let r: Ray | undefined;
+		if (position !== undefined) {
+			r = workspace.CurrentCamera?.ViewportPointToRay(position.X, position.Y, 10);
+			if (r !== undefined) {
+				r = new Ray(r.Origin, r.Direction.mul(1000));
+			}
+		}
+		if (r !== undefined) {
+			const rp: RaycastParams = new RaycastParams();
+			rp.FilterDescendantsInstances = filter;
+			rp.FilterType = Enum.RaycastFilterType.Blacklist;
+			rp.IgnoreWater = true;
+			const rayCastRes: RaycastResult | undefined = workspace.Raycast(r.Origin, r.Direction, rp);
+			if (rayCastRes !== undefined) {
+				return rayCastRes.Instance;
+			}
+		}
+		return undefined;
 	}
 }
 
