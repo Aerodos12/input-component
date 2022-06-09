@@ -64,6 +64,10 @@ export type GamepadDownSignal = Signal<(button: Enum.KeyCode, isDown: boolean) =
  */
 export type MouseDownSignal = Signal<(key: MouseType, isDown: boolean) => void>;
 /**
+ * Used for handling UserInputService input events directly.
+ */
+export type InputSignal = Signal<(input: InputObject, gp: boolean) => void>;
+/**
  * Denotes one of the 8 Gamepads that can be connected at once to Roblox.
  */
 export type GamepadType =
