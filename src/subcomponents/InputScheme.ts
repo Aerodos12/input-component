@@ -64,7 +64,13 @@ namespace InputSchemeSC {
 	 * @interface
 	 */
 	export interface ModeManifest {
+		/**
+		 * The name of this mode.
+		 */
 		Name: String;
+		/**
+		 * The actions that can be performed with this mode.
+		 */
 		Actions: Array<String>;
 	}
 	/**
