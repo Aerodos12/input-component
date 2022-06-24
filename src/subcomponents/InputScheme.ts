@@ -1,4 +1,5 @@
 import Signal from "@rbxts/signal";
+import { ListenToKeyChanged } from "..";
 import { InputKind, InputSignal } from "../inputTypes";
 import { AxisDataFormat, AxisRotationMode } from "./inputAxis";
 
@@ -9,6 +10,16 @@ namespace InputSchemeSC {
 	}
 
 	/**
+	 * Used for InputAxes only.
+	 */
+	export type NullableKeycode = Enum.KeyCode | false;
+
+	/**
+	 * Defines the code for  an action.
+	 */
+	export type InputActionRunner = (inputObj: InputObject, gameProcessed: boolean) => void;
+
+	/**
 	 * A function that creates an action.
 	 */
 	export type InputSchemeActionProcessor = (
@@ -16,6 +27,7 @@ namespace InputSchemeSC {
 		name: String,
 		inputCodes: Array<InputKind>,
 		hold: boolean,
+		onRun: InputActionRunner,
 		existing: boolean,
 		mode: number,
 	) => void;
@@ -28,7 +40,7 @@ namespace InputSchemeSC {
 		name: String,
 		uit: Enum.UserInputType,
 		dataType: AxisDataFormat,
-		keyCode: Enum.KeyCode,
+		keyCode: NullableKeycode,
 		polled: boolean,
 		rotMode: AxisRotationMode,
 	) => RBXScriptConnection;
@@ -73,6 +85,69 @@ namespace InputSchemeSC {
 		 */
 		Actions: Array<String>;
 	}
+
+	/**
+	 * Used for registering axes
+	 * @interface
+	 */
+	export interface AxisArgs {
+		/**
+		 * The name of the axis.
+		 */
+		name: String;
+		/**
+		 * Specifies the valid type of input(s) the axis would work with.
+		 */
+		uit: Enum.UserInputType;
+		/**
+		 * How the axis data ({@link AxisDataFormat the format }) is processed.
+		 */
+		dataType: AxisDataFormat;
+		/**
+		 * The {@link Enum.KeyCode keys} that would be used if the input axis used the {@link Enum.UserInputType.Keyboard keyboard} and was {@link AxisDataFormat.Analog analog}.
+		 */
+		keyCode: NullableKeycode;
+		/**
+		 * Determines if the axis updates every frame or not (polling inputs).
+		 */
+		polled: boolean;
+		/**
+		 * Determines how the rotary inputs should be processed (using your code or this module's code).
+		 */
+		rotMode: AxisRotationMode;
+	}
+
+	/**
+	 * Used for registering actions.
+	 * @interface
+	 */
+	export interface ActionArgs {
+		/**
+		 * The name of the action.
+		 */
+		name: String;
+		/**
+		 * An array of inputs used with this action.
+		 */
+		inputCodes: Array<InputKind>;
+		/**
+		 * Whether or not the input should be held.
+		 */
+		hold: boolean;
+		/**
+		 * The action that is executed in code form.
+		 */
+		onRun: InputActionRunner;
+		/**
+		 * Should the registry use an existing mode from the mode list?
+		 */
+		existing: boolean;
+		/**
+		 * The mode index to use when on mobile or console.
+		 */
+		mode: number;
+	}
+
 	/**
 	 * An object used for separating inputs by function.
 	 */
@@ -115,6 +190,35 @@ namespace InputSchemeSC {
 				Name: name,
 				Actions: actions,
 			});
+		}
+
+		Register(inputObjectType: InputObjectType, args: AxisArgs | ActionArgs): RBXScriptConnection | undefined {
+			if (inputObjectType === InputObjectType.Axis) {
+				const args2 = args as AxisArgs;
+				const axisFunc = this.registers.get(InputObjectType.Axis) as InputSchemeAxisProcessor;
+				return axisFunc(
+					this,
+					args2.name,
+					args2.uit,
+					args2.dataType,
+					args2.keyCode,
+					args2.polled,
+					args2.rotMode,
+				);
+			} else if (inputObjectType === InputObjectType.Action) {
+				const args2 = args as ActionArgs;
+				const actionFunc = this.registers.get(InputObjectType.Action) as InputSchemeActionProcessor;
+				actionFunc(this, args2.name, args2.inputCodes, args2.hold, args2.onRun, args2.existing, args2.mode);
+				return undefined;
+			}
+		}
+
+		RegisterAction(args: ActionArgs) {
+			this.Register(InputObjectType.Action, args);
+		}
+
+		AddAxis(args: AxisArgs): RBXScriptConnection | undefined {
+			return this.Register(InputObjectType.Axis, args);
 		}
 	}
 }
