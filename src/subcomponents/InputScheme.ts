@@ -2,6 +2,7 @@ import Signal from "@rbxts/signal";
 import { ListenToKeyChanged } from "..";
 import { InputKind, InputSignal } from "../inputTypes";
 import { AxisDataFormat, AxisRotationMode } from "./inputAxis";
+const UIS = game.GetService("UserInputService");
 
 namespace InputSchemeSC {
 	export enum InputObjectType {
@@ -175,6 +176,16 @@ namespace InputSchemeSC {
 		}
 
 		/**
+		 * Property used for storing the actions themselves in this object.
+		 */
+		public ActionsLibrary: Map<string, InputSchemeAction> = new Map<string, InputSchemeAction>();
+
+		/**
+		 * Denotes the currently selected mode for this InputScheme.
+		 */
+		public Index = 1;
+
+		/**
 		 * Adds a {@link ModeManifest mode} to this InputScheme.
 		 * @param mode The mode number to be used when pressing the {@link Enum.KeyCode.DPadDown down} or  {@link Enum.KeyCode.DPadUp up} buttons on the Dpad.
 		 * @param name the name of the mode itself.
@@ -192,6 +203,12 @@ namespace InputSchemeSC {
 			});
 		}
 
+		/**
+		 * Registers the given input type into this {@link InputScheme}.
+		 * @param inputObjectType The type of input to process
+		 * @param args the setup parameters for {@link inputObjectType}
+		 * @returns Either a {@link RBXScriptSignal} (if using an axis) or nothing at all.
+		 */
 		Register(inputObjectType: InputObjectType, args: AxisArgs | ActionArgs): RBXScriptConnection | undefined {
 			if (inputObjectType === InputObjectType.Axis) {
 				const args2 = args as AxisArgs;
@@ -213,12 +230,75 @@ namespace InputSchemeSC {
 			}
 		}
 
+		private actionFind(actionName: string): boolean {
+			for (const i of this.Modes[this.Index].Actions) {
+				if (i === actionName) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Sets up a keybind/action that isn't polled via a connection.
+		 * @param args The action's parameters
+		 */
 		RegisterAction(args: ActionArgs) {
 			this.Register(InputObjectType.Action, args);
 		}
 
+		/**
+		 * Sets up a keybind/action that is polled via a connection.
+		 * @param args The axis' parameters
+		 * @returns a signal used to process the axis.
+		 */
 		AddAxis(args: AxisArgs): RBXScriptConnection | undefined {
 			return this.Register(InputObjectType.Axis, args);
+		}
+
+		/**
+		 * Allows actions to be used on touch screens.
+		 * @param actionName The name of the action
+		 * @param button The button that will activate the action when touched.
+		 * @returns a {@link RBXScriptConnection|connection} to the button being touched.
+		 */
+		RegisterActionButton(actionName: string, button: GuiButton): RBXScriptConnection {
+			const run = (actionN: string, i2: InputObject, gp: boolean) => this.Run(actionN, i2, gp);
+			return button.Activated.Connect(function (input: InputObject, clicks: number) {
+				if (input.UserInputType === Enum.UserInputType.Touch) {
+					if (input.UserInputState === Enum.UserInputState.End) {
+						run(actionName, input, false);
+					}
+				}
+			});
+		}
+
+		/**
+		 * Checks to see if the mode contains the given action
+		 * @param actionName the action to check against
+		 * @returns Whether or not the actions fits.
+		 */
+		IsPartOfMode(actionName: string): boolean {
+			return this.actionFind(actionName);
+		}
+
+		/**
+		 * Performs the given action.
+		 * @param actionName The name of the action
+		 * @param i the input object to check against
+		 * @param gp equivalent of gameProcessedEvent on InputBegan.
+		 */
+		Run(actionName: string, i: InputObject, gp: boolean) {
+			let cond = false;
+			if (UIS.GamepadEnabled && UIS.GetConnectedGamepads().size() > 0) {
+				cond = this.IsPartOfMode(actionName);
+			}
+			if (cond) {
+				const actionEntry = this.ActionsLibrary.get(actionName);
+				if (actionEntry !== undefined) {
+					actionEntry?.onRun(actionName, i, gp);
+				}
+			}
 		}
 	}
 }
