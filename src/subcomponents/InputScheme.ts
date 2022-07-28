@@ -1,5 +1,5 @@
 import Signal from "@rbxts/signal";
-import { ListenToKeyChanged } from "..";
+import { IsInputDown, ListenToKeyChanged } from "..";
 import { InputKind, InputSignal } from "../inputTypes";
 import { AxisDataFormat, AxisRotationMode } from "./inputAxis";
 const UIS = game.GetService("UserInputService");
@@ -25,7 +25,7 @@ namespace InputSchemeSC {
 	 */
 	export type InputSchemeActionProcessor = (
 		self: InputScheme,
-		name: String,
+		name: string,
 		inputCodes: Array<InputKind>,
 		hold: boolean,
 		onRun: InputActionRunner,
@@ -38,7 +38,7 @@ namespace InputSchemeSC {
 	 */
 	export type InputSchemeAxisProcessor = (
 		self: InputScheme,
-		name: String,
+		name: string,
 		uit: Enum.UserInputType,
 		dataType: AxisDataFormat,
 		keyCode: NullableKeycode,
@@ -61,7 +61,7 @@ namespace InputSchemeSC {
 		/**
 		 * Called when the action is correctly triggered.
 		 */
-		onRun: (actionName: String, i: InputObject, gp: boolean) => void;
+		onRun: (actionName: string, i: InputObject, gp: boolean) => void;
 		/**
 		 * Determines whether or not the action is held first.
 		 */
@@ -80,11 +80,11 @@ namespace InputSchemeSC {
 		/**
 		 * The name of this mode.
 		 */
-		Name: String;
+		Name: string;
 		/**
 		 * The actions that can be performed with this mode.
 		 */
-		Actions: Array<String>;
+		Actions: Array<string>;
 	}
 
 	/**
@@ -95,7 +95,7 @@ namespace InputSchemeSC {
 		/**
 		 * The name of the axis.
 		 */
-		name: String;
+		name: string;
 		/**
 		 * Specifies the valid type of input(s) the axis would work with.
 		 */
@@ -126,7 +126,7 @@ namespace InputSchemeSC {
 		/**
 		 * The name of the action.
 		 */
-		name: String;
+		name: string;
 		/**
 		 * An array of inputs used with this action.
 		 */
@@ -162,10 +162,26 @@ namespace InputSchemeSC {
 		public Modes: Array<ModeManifest> = new Array<ModeManifest>();
 
 		/**
+		 * Fires when activated
+		 * @public
+		 */
+		public Activated: InputSignal = new Signal<(input: InputObject, gp: boolean) => void>();
+
+		/**
+		 * Fires the {@link Activated Activated event}
+		 * @param input The {@link InputObject} to use when firing the event
+		 * @param gp whether or not UI handled the input
+		 */
+		private Activate(input: InputObject, gp: boolean) {
+			this.Activated.Fire(input, gp);
+			this.Deactivate(input, gp);
+		}
+		/**
 		 * Fires when deactivated.
 		 * @public
 		 */
 		public Deactivated: InputSignal = new Signal<(input: InputObject, gp: boolean) => void>();
+
 		/**
 		 * Fires the {@link Deactivated Deactivated event}.
 		 * @param input The {@iink InputObject} to use for
@@ -183,7 +199,7 @@ namespace InputSchemeSC {
 		/**
 		 * Denotes the currently selected mode for this InputScheme.
 		 */
-		public Index = 1;
+		public Index = 0;
 
 		/**
 		 * Adds a {@link ModeManifest mode} to this InputScheme.
@@ -191,7 +207,7 @@ namespace InputSchemeSC {
 		 * @param name the name of the mode itself.
 		 * @param actions The actions that are valid for this mode.
 		 */
-		AddMode(mode: number, name: String, actions: Array<String>) {
+		AddMode(mode: number, name: string, actions: Array<string>) {
 			assert(
 				typeOf(mode) === "number" && math.floor(mode) === mode && mode > 0,
 				"[InputComponent 2]: Mode Index must be an integer.",
@@ -299,6 +315,58 @@ namespace InputSchemeSC {
 					actionEntry?.onRun(actionName, i, gp);
 				}
 			}
+		}
+
+		/**
+		 * Retrieves the name of the current input scheme mode.
+		 * @returns The name of the current mode
+		 */
+		GetModeName(): string {
+			return this.Modes[this.Index].Name;
+		}
+
+		/**
+		 * Checks to see if the inputs given match the current {@link InputObject|input}.
+		 * @param inputArray the inputs to test against
+		 * @param input the current input to check
+		 * @param hold whether or not the key should be held.
+		 * @returns Whether or not the current {@link InputObject|input} matches {@link inputArray|what was given}.
+		 */
+		MatchesInput(inputArray: Array<InputKind>, input: InputObject, hold: boolean): boolean {
+			let result = true;
+			for (const inputCode of inputArray) {
+				let hCon = false;
+				if (hold) {
+					hCon = IsInputDown(input.KeyCode) || IsInputDown(input.UserInputType as InputKind);
+				}
+				const condition = input.KeyCode === inputCode || input.UserInputType === inputCode || hCon;
+				result = result && condition;
+				if (!result) {
+					return result;
+				}
+			}
+			return result;
+		}
+
+		/**
+		 * Resets the current mode to 1 (0 in TypeScript).
+		 */
+		ResetMode() {
+			this.Index = 0;
+		}
+
+		/**
+		 * Goes back a mode (previous)
+		 */
+		PrevMode() {
+			this.Index = math.clamp(this.Index - 1, 0, this.Modes.size() - 1);
+		}
+
+		/**
+		 * Goes forward by one mode (next).
+		 */
+		NextMode() {
+			this.Index = math.clamp(this.Index + 1, 0, this.Modes.size() - 1);
 		}
 	}
 }
